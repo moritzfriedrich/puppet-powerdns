@@ -41,7 +41,7 @@ Puppet::Type.type(:powerdns_zone_private).provide(
     current_records = extract_non_soa_records(content)
     new_records = extract_non_soa_records(_content)
 
-    if current_content.empty? || current_records != new_records
+    if content.empty? || current_records != new_records
       pdnsutil_set_records(@serial)
       pdnsutil(pdnsutil_options, 'increase-serial', resource[:name])
     end
