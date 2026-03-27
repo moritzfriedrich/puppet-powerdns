@@ -37,8 +37,14 @@ Puppet::Type.type(:powerdns_zone_private).provide(
   def content=(_content)
     return unless resource[:manage_records]
 
-    pdnsutil_set_records(@serial)
-    pdnsutil pdnsutil_options, 'increase-serial', resource[:name]
+    # Check if only SOA record changed or if actual DNS records changed
+    current_records = extract_non_soa_records(content)
+    new_records = extract_non_soa_records(_content)
+
+    if current_content.empty? || current_records != new_records
+      pdnsutil_set_records(@serial)
+      pdnsutil(pdnsutil_options, 'increase-serial', resource[:name])
+    end
   end
 
   def pdnsutil_set_records(serial)
@@ -56,6 +62,13 @@ Puppet::Type.type(:powerdns_zone_private).provide(
       return idx if r.include?('SOA')
     end
     'notfound'
+  end
+
+  def extract_non_soa_records(content)
+    # Extract all non-SOA records for comparison
+    # This is used to detect if actual DNS records changed (vs. just SOA params)
+    records = content.split("\n")
+    records.reject { |r| r.include?('SOA') || r.strip.empty? }.sort.join("\n")
   end
 
   def content
