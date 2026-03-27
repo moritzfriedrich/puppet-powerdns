@@ -3,6 +3,8 @@
 # This file contains a provider for the resource type `powerdns_zone`,
 #
 require 'tempfile'
+require 'fileutils'
+
 Puppet::Type.type(:powerdns_zone_private).provide(
   :pdnsutil,
 ) do
@@ -11,6 +13,12 @@ Puppet::Type.type(:powerdns_zone_private).provide(
         using the pdnsutil command."
 
   commands pdnsutil: 'pdnsutil'
+
+  ZONES_DIR = '/etc/powerdns/puppet-zones'
+
+  def zone_file_path
+    "#{ZONES_DIR}/#{resource[:name]}.zone"
+  end
 
   def pdnsutil_options
     options = []
@@ -48,13 +56,10 @@ Puppet::Type.type(:powerdns_zone_private).provide(
   end
 
   def pdnsutil_set_records(serial)
-    tmpfile = Tempfile.new(resource[:name])
-    tmpfile.write(resource[:content].gsub(%r{_SERIAL_}, serial))
-    tmpfile.rewind
-    pdnsutil(pdnsutil_options, 'load-zone', resource[:name], tmpfile.path)
-  ensure
-    tmpfile.close
-    tmpfile.unlink
+    File.open(zone_file_path, 'w') do |f|
+      f.write(resource[:content].gsub(%r{_SERIAL_}, serial))
+    end
+    pdnsutil(pdnsutil_options, 'load-zone', resource[:name], zone_file_path)
   end
 
   def find_soa(records)
