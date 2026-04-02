@@ -47,7 +47,13 @@ Puppet::Type.type(:powerdns_zone_private).provide(
 
     # Check if only SOA record changed or if actual DNS records changed
     current_records = extract_non_soa_records(content)
+    File.open(zone_file_path + '.current', 'w') do |f|
+      f.write(current_records)
+    end
     new_records = extract_non_soa_records(_content)
+    File.open(zone_file_path + '.new', 'w') do |f|
+      f.write(new_records)
+    end
 
     if content.empty? || current_records != new_records
       pdnsutil_set_records(@serial)
