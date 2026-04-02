@@ -62,7 +62,8 @@ Puppet::Type.type(:powerdns_zone_private).provide(
     return '' unless resource[:manage_records]
 
     c = pdnsutil(pdnsutil_options, 'list-zone', resource[:name])
-    records = c.split("\n")
+    # Filter out log messages (e.g., bindbackend messages starting with date)
+    records = c.split("\n").reject { |line| line.match?(/^\w{3}\s+\d{2}\s+\d{2}:\d{2}:\d{2}/) }
     soanr = find_soa(records)
     if soanr == 'notfound'
       @serial = '1'
